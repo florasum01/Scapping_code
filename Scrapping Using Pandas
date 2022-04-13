@@ -1,0 +1,51 @@
+import requests
+import pandas as pd
+import json
+import csv
+from datetime import datetime
+def get_json(index):
+    url = "https://catalog.chaldal.com/searchOld"
+
+    payload = "{\r\n    \"apiKey\": \"e964fc2d51064efa97e94db7c64bf3d044279d4ed0ad4bdd9dce89fecc9156f0\",\r\n    \"storeId\": 1,\r\n    \"warehouseId\": 3,\r\n    \"pageSize\": 8000,\r\n    \"currentPageIndex\": "+index+",\r\n    \"metropolitanAreaId\": 1,\r\n    \"query\": \"\",\r\n    \"productVariantId\": -1,\r\n    \"canSeeOutOfStock\": \"false\",\r\n    \"filters\": [],\r\n    \"ab\": \"1:A\"\r\n}"
+    headers = {
+  'authority': 'catalog.chaldal.com',
+  'accept': 'application/json',
+  'accept-language': 'en-US,en;q=0.9',
+  'cache-control': 'no-cache',
+  'content-type': 'application/json, application/json',
+  'origin': 'https://chaldal.com',
+  'referer': 'https://chaldal.com/',
+  'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="100", "Google Chrome";v="100"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36'
+}
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    return response.json()
+
+def norm_data(data):
+    df = pd.json_normalize(data)
+    return df
+
+def save_to_csv(df): 
+        df.to_csv(datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")+""+"Chaldal_recode.csv")
+
+def main ():
+    startIndex  = 0
+    df = pd.DataFrame()
+    while startIndex < 50:
+        data=get_json(str(startIndex))
+        itemHits = data.get('hits')
+        if itemHits:
+            df = df.append(norm_data(data.get('hits')), ignore_index=True)
+            startIndex += 1
+        else:
+            break
+    save_to_csv(df)
+    print('done')
+if __name__=='__main__':
+    main()
